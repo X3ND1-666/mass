@@ -27,7 +27,14 @@ def main():
     # Periksa setiap domain dan simpan hasil valid
     with open("ress.txt", 'w') as output_file:
         for dork in dorks:
-            domain = urlparse(dork).netloc or dork  # Ambil domain dari URL dork
+            # Ekstrak domain dari URL lengkap atau jalur
+            parsed_url = urlparse(dork)
+            domain = parsed_url.netloc or parsed_url.path.split('/')[0]  # Ambil domain utama
+
+            # Lewati jika bukan domain valid
+            if '.' not in domain:
+                continue
+
             wp_login_url = check_wordpress_login(domain)
             if wp_login_url:
                 print(f"{wp_login_url} > WordPress ditemukan")
