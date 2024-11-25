@@ -2,6 +2,11 @@ import sys
 import requests
 from urllib.parse import urlparse
 
+# Fungsi untuk mengekstrak domain utama dari URL
+def extract_domain(url):
+    parsed_url = urlparse(url)
+    return parsed_url.netloc or parsed_url.path.split('/')[0]  # Ambil domain utama saja
+
 # Fungsi untuk memeriksa apakah halaman wp-login.php ada
 def check_wordpress_login(domain):
     for protocol in ["http://", "https://"]:
@@ -24,23 +29,19 @@ def main():
     with open(sys.argv[1], 'r') as file:
         dorks = file.read().splitlines()
 
-    # Periksa setiap domain dan simpan hasil valid
+    # Periksa setiap dork, ekstrak domain, dan simpan hasil valid
     with open("ress.txt", 'w') as output_file:
+        seen_domains = set()  # Hindari duplikasi domain
         for dork in dorks:
-            # Ekstrak domain dari URL lengkap atau jalur
-            parsed_url = urlparse(dork)
-            domain = parsed_url.netloc or parsed_url.path.split('/')[0]  # Ambil domain utama
-
-            # Lewati jika bukan domain valid
-            if '.' not in domain:
-                continue
-
-            wp_login_url = check_wordpress_login(domain)
-            if wp_login_url:
-                print(f"{wp_login_url} > WordPress ditemukan")
-                output_file.write(wp_login_url + "\n")  # Tulis domain valid ke file
-            else:
-                print(f"{domain} > Bukan WordPress atau tidak aktif")
+            domain = extract_domain(dork)
+            if domain and domain not in seen_domains:
+                seen_domains.add(domain)
+                wp_login_url = check_wordpress_login(domain)
+                if wp_login_url:
+                    print(f"{wp_login_url} > WordPress ditemukan")
+                    output_file.write(wp_login_url + "\n")  # Tulis domain valid ke file
+                else:
+                    print(f"{domain} > Bukan WordPress atau tidak aktif")
 
 if __name__ == "__main__":
     main()
