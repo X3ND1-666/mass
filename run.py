@@ -7,7 +7,7 @@ init(autoreset=True)
 
 # Fungsi untuk mengambil username dari REST API
 def get_usernames(domain):
-    url = f"http://{domain}/wp-json/wp/v2/users"
+    url = f"https://{domain}/wp-json/wp/v2/users"
     try:
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
