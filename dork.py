@@ -3,37 +3,36 @@ import requests
 import re
 from urllib.parse import urlparse
 
-# Fungsi untuk mengekstrak domain dari teks
+# Fungsi untuk mengekstrak domain dari teks menggunakan regex
 def extract_domain(line):
-    # Cari pola domain dengan regex (misalnya: example.com)
-    match = re.search(r'(https?:\/\/)?(www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', line)
+    match = re.search(r'(https?://)?(www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', line)
     if match:
-        return match.group(3)  # Kembalikan hanya domain utamanya
+        return match.group(3)  # Ambil hanya domain utama
     return None
 
-# Fungsi untuk memeriksa apakah halaman wp-login.php ada
+# Fungsi untuk memeriksa halaman wp-login.php
 def check_wordpress_login(domain):
     for protocol in ["http://", "https://"]:
         url = f"{protocol}{domain}/wp-login.php"
         try:
             response = requests.get(url, timeout=5, allow_redirects=True)
             if response.status_code == 200 and "wp-login" in response.text:
-                return url  # Domain valid WordPress
+                return url  # Ditemukan halaman WordPress
         except requests.exceptions.RequestException:
-            continue  # Coba protokol berikutnya jika gagal
+            continue  # Coba dengan protokol berikutnya
     return None
 
-# Fungsi utama
+# Fungsi utama untuk membaca daftar dork dan memprosesnya
 def main():
     if len(sys.argv) != 2:
-        print("Penggunaan: python dork_to_wp_checker.py <listdork.txt>")
+        print("Penggunaan: python script.py <listdork.txt>")
         sys.exit(1)
 
     # Membaca daftar dork dari file
     with open(sys.argv[1], 'r') as file:
         lines = file.read().splitlines()
 
-    # Periksa setiap baris, ekstrak domain, dan tampilkan hasil valid
+    # Proses setiap baris, ekstrak domain, dan periksa WordPress
     seen_domains = set()  # Hindari duplikasi domain
     for line in lines:
         domain = extract_domain(line)
@@ -41,7 +40,7 @@ def main():
             seen_domains.add(domain)
             wp_login_url = check_wordpress_login(domain)
             if wp_login_url:
-                print(f"{wp_login_url} > WordPress ditemukan")
+                print(f"\033[92m{wp_login_url} > WordPress ditemukan\033[0m")  # Warna hijau
             else:
                 print(f"{domain} > Bukan WordPress atau tidak aktif")
 
