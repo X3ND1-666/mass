@@ -1,11 +1,15 @@
 import sys
 import requests
+import re
 from urllib.parse import urlparse
 
-# Fungsi untuk mengekstrak domain utama dari URL
-def extract_domain(url):
-    parsed_url = urlparse(url)
-    return parsed_url.netloc or parsed_url.path.split('/')[0]  # Ambil domain utama saja
+# Fungsi untuk mengekstrak domain dari teks
+def extract_domain(line):
+    # Cari pola domain dengan regex (misalnya: example.com)
+    match = re.search(r'(https?:\/\/)?(www\.)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', line)
+    if match:
+        return match.group(3)  # Kembalikan hanya domain utamanya
+    return None
 
 # Fungsi untuk memeriksa apakah halaman wp-login.php ada
 def check_wordpress_login(domain):
@@ -27,21 +31,19 @@ def main():
 
     # Membaca daftar dork dari file
     with open(sys.argv[1], 'r') as file:
-        dorks = file.read().splitlines()
+        lines = file.read().splitlines()
 
-    # Periksa setiap dork, ekstrak domain, dan simpan hasil valid
-    with open("ress.txt", 'w') as output_file:
-        seen_domains = set()  # Hindari duplikasi domain
-        for dork in dorks:
-            domain = extract_domain(dork)
-            if domain and domain not in seen_domains:
-                seen_domains.add(domain)
-                wp_login_url = check_wordpress_login(domain)
-                if wp_login_url:
-                    print(f"{wp_login_url} > WordPress ditemukan")
-                    output_file.write(wp_login_url + "\n")  # Tulis domain valid ke file
-                else:
-                    print(f"{domain} > Bukan WordPress atau tidak aktif")
+    # Periksa setiap baris, ekstrak domain, dan tampilkan hasil valid
+    seen_domains = set()  # Hindari duplikasi domain
+    for line in lines:
+        domain = extract_domain(line)
+        if domain and domain not in seen_domains:
+            seen_domains.add(domain)
+            wp_login_url = check_wordpress_login(domain)
+            if wp_login_url:
+                print(f"{wp_login_url} > WordPress ditemukan")
+            else:
+                print(f"{domain} > Bukan WordPress atau tidak aktif")
 
 if __name__ == "__main__":
     main()
